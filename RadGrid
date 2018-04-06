@@ -1,0 +1,70 @@
+```Adding a new Item
+
+When adding a new item using the commanditemtemplate you have a choice of which editformtype to use.  If you're using a template then you can add custom information but you must do the following:
+	1. use the commandItem event to capture the add new item event
+	2. Search for the commandname of the e.CommandName "InitInsert", "PerformInsert", etc…
+	3. Cancel the event (e.CancelEvent())
+	4. Then you can find your component
+D
+                    <MasterTableView DataKeyNames="ID" CommandItemDisplay="Top" caption = "Divisions" AllowCustomPaging="False" EditMode="PopUp">
+                        <CommandItemTemplate >
+                            <asp:LinkButton ID="btnAddNew" runat="server" CommandName="InitInsert" Text="Add Subsidiary" />
+                            <asp:LinkButton ID="btnPerformInsert" runat="server" CommandName="PerformInsert" Text="Save Subsidiary" />
+                        </CommandItemTemplate>
+                        <Columns>
+                            <telerik:GridButtonColumn UniqueName="DeleteColumn" Text="Delete" CommandName="Delete"></telerik:GridButtonColumn>
+                            <telerik:GridTemplateColumn DataField="id" FilterControlAltText="Filter column column" HeaderText="Name" UniqueName="Name_column" SortExpression="name"
+                                HeaderStyle-Font-Size="12pt" ItemStyle-Font-Size="12pt">
+                                <ItemTemplate>
+                                        <asp:HiddenField ID="DivisionID" runat="server" value='<%#Eval("id")%>'></asp:HiddenField>
+                                        <span><%#Eval("name")%> </span>
+                                </ItemTemplate>
+                                <HeaderStyle Width="92%" Font-Underline="False" />
+                                <ItemStyle VerticalAlign="Top" Width="80px" Wrap="False" />
+                            </telerik:GridTemplateColumn>
+                        </Columns>
+                        <EditFormSettings EditFormType="Template">
+                          <EditColumn uniquename="EditCommandColumn1"/>
+                          <FormTemplate>
+                              <h3>New Subsidiary</h3>
+                              <div style="display: inline; float:left; width:400px; padding:20px">
+                                  <span>Please choose a subsidiary</span><asp:DropDownList ID="ddlDivisionSelection" Size="10" runat="server"></asp:DropDownList>
+                                </div><br />
+                          </FormTemplate>
+                          <PopUpSettings ScrollBars="None" />
+                        </EditFormSettings>
+                    </MasterTableView>
+
+
+
+                            Protected Sub Division_Grid_ItemCommand(source As Object, e As GridCommandEventArgs) Handles Division_Grid.ItemCommand
+
+            If (e.CommandName = "InitInsert") Then
+                e.Canceled = True
+                e.Item.OwnerTableView.InsertItem()
+
+                Dim newitems As ArrayList = New ArrayList
+                Dim insertedItem As GridEditableItem = e.Item.OwnerTableView.GetInsertItem()
+                Dim ddl1 As DropDownList = CType(insertedItem.FindControl("ddlDivisionSelection"), DropDownList)
+
+                For Each subsidiary As Models.Member In CompanyDataService.GetAllCompanies().OrderBy(Function(sc) sc.Name).ToList()
+                    newitems.Add(New ListItem(subsidiary.Name, subsidiary.ID))
+                Next
+                ddl1.DataSource = newitems
+                ddl1.DataBind()
+            End If
+            If (e.CommandName = "PerformInsert") Then
+                e.Canceled = True
+                Dim insertedItem As GridEditableItem = e.Item.OwnerTableView.GetInsertItem()
+                Dim ddl1 As DropDownList = CType(insertedItem.FindControl("ddlDivisionSelection"), DropDownList)
+                Dim ddlValue As String = ddl1.SelectedValue
+
+                Dim newSubsidiary As Models.Subsidiary = New Models.Subsidiary
+                newSubsidiary.Parent_ID = CompanyId
+                newSubsidiary.Name = ddl1.SelectedItem.Text
+                CompanyDataService.AddSubsidiary(newSubsidiary)
+                Division_Grid.DataSource = CompanyDataService.GetAllSubsidiariesByParent(CompanyId).OrderBy(Function(sc) sc.Name).ToList()
+                Division_Grid.Rebind()
+            End If
+        End Sub
+        ```
